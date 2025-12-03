@@ -6,7 +6,7 @@ import {
   worldToScreen,
   isOffside
 } from '../utils/math';
-import { calculateCanvasScale, drawPerspectiveAxes } from '../utils/canvas';
+import { calculateCanvasScale } from '../utils/canvas';
 
 function ResultVisualization({
   imageSrc,
@@ -43,11 +43,15 @@ function ResultVisualization({
       const defenderWorld = screenToWorld(H, defenderPos);
       const attackerWorld = screenToWorld(H, attackerPos);
 
+      // Check if lines are on the same position (tolerance of 0.01 in world space)
+      const sameLine = Math.abs(attackerWorld.x - defenderWorld.x) < 0.01;
+      
       // Check offside
-      const offsideResult = isOffside(attackerWorld.x, defenderWorld.x, attackDirection);
+      const offsideResult = sameLine ? false : isOffside(attackerWorld.x, defenderWorld.x, attackDirection);
 
       setResult({
         isOffside: offsideResult,
+        sameLine,
         defenderWorld,
         attackerWorld
       });
@@ -86,54 +90,86 @@ function ResultVisualization({
       ctx.restore();
 
       // Draw offside lines
-      // Defender line (Blue)
-      const defenderTop = worldToScreen(H, { x: defenderWorld.x, y: 0 });
-      const defenderBottom = worldToScreen(H, { x: defenderWorld.x, y: 1 });
-      
-      ctx.strokeStyle = '#3b82f6';
+      if (sameLine) {
+        // Draw single yellow line when positions are the same
+        const lineTop = worldToScreen(H, { x: defenderWorld.x, y: 0 });
+        const lineBottom = worldToScreen(H, { x: defenderWorld.x, y: 1 });
+        
+        ctx.strokeStyle = '#fbbf24'; // Yellow/Gold
+        ctx.lineWidth = 3;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(lineTop.x * scale, lineTop.y * scale);
+        ctx.lineTo(lineBottom.x * scale, lineBottom.y * scale);
+        ctx.stroke();
+      } else {
+        // Defender line (Blue)
+        const defenderTop = worldToScreen(H, { x: defenderWorld.x, y: 0 });
+        const defenderBottom = worldToScreen(H, { x: defenderWorld.x, y: 1 });
+        
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(defenderTop.x * scale, defenderTop.y * scale);
+        ctx.lineTo(defenderBottom.x * scale, defenderBottom.y * scale);
+        ctx.stroke();
+
+        // Attacker line (Red)
+        const attackerTop = worldToScreen(H, { x: attackerWorld.x, y: 0 });
+        const attackerBottom = worldToScreen(H, { x: attackerWorld.x, y: 1 });
+        
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(attackerTop.x * scale, attackerTop.y * scale);
+        ctx.lineTo(attackerBottom.x * scale, attackerBottom.y * scale);
+        ctx.stroke();
+      }
+
+      // Draw result box in bottom-left corner
+      const boxMargin = 20;
+      const boxPadding = 20;
+      const boxWidth = 320;
+      const boxHeight = 90;
+      const boxX = boxMargin;
+      const boxY = displayHeight - boxHeight - boxMargin;
+
+      // Draw box background with border
+      ctx.save();
+      if (offsideResult) {
+        ctx.fillStyle = 'rgba(127, 29, 29, 0.9)'; // Red with opacity
+        ctx.strokeStyle = '#ef4444';
+      } else {
+        ctx.fillStyle = 'rgba(20, 83, 45, 0.9)'; // Green with opacity
+        ctx.strokeStyle = '#10b981';
+      }
       ctx.lineWidth = 3;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(defenderTop.x * scale, defenderTop.y * scale);
-      ctx.lineTo(defenderBottom.x * scale, defenderBottom.y * scale);
-      ctx.stroke();
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-      // Attacker line (Red)
-      const attackerTop = worldToScreen(H, { x: attackerWorld.x, y: 0 });
-      const attackerBottom = worldToScreen(H, { x: attackerWorld.x, y: 1 });
-      
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(attackerTop.x * scale, attackerTop.y * scale);
-      ctx.lineTo(attackerBottom.x * scale, attackerBottom.y * scale);
-      ctx.stroke();
-
-      // Draw position markers with perspective axes
-      // Defender (Blue)
-      drawPerspectiveAxes(ctx, defenderPos, calibrationPoints, scale, '#3b82f6');
-
-      // Attacker (Red)
-      drawPerspectiveAxes(ctx, attackerPos, calibrationPoints, scale, '#ef4444');
-
-      // Add labels
-      const defX = defenderPos.x * scale;
-      const defY = defenderPos.y * scale;
-      const attX = attackerPos.x * scale;
-      const attY = attackerPos.y * scale;
-
-      ctx.font = 'bold 14px sans-serif';
+      // Draw text
       ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3;
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
       
-      // Defender label
-      ctx.strokeText('DEFENDER', defX - 40, defY - 25);
-      ctx.fillText('DEFENDER', defX - 40, defY - 25);
+      const textX = boxX + boxPadding;
+      const textY = boxY + boxPadding;
       
-      // Attacker label
-      ctx.strokeText('ATTACKER', attX - 40, attY - 25);
-      ctx.fillText('ATTACKER', attX - 40, attY - 25);
+      if (offsideResult) {
+        ctx.fillText('OFFSIDE', textX, textY);
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#fca5a5';
+        ctx.fillText('The attacker is in an offside position', textX, textY + 40);
+      } else {
+        ctx.fillText('ONSIDE', textX, textY);
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#86efac';
+        ctx.fillText('The attacker is not offside', textX, textY + 40);
+      }
+      
+      ctx.restore();
 
     } catch (err) {
       console.error('Error calculating offside:', err);
@@ -166,47 +202,6 @@ function ResultVisualization({
         </div>
       )}
 
-      {result && (
-        <div className={`mb-6 p-6 rounded-lg shadow-lg ${
-          result.isOffside
-            ? 'bg-red-900/50 border-2 border-red-500'
-            : 'bg-green-900/50 border-2 border-green-500'
-        }`}>
-          <div className="flex items-center justify-center space-x-3">
-            {result.isOffside ? (
-              <>
-                <XCircle size={32} className="text-red-400" />
-                <div>
-                  <h3 className="text-2xl font-bold text-red-200">OFFSIDE</h3>
-                  <p className="text-sm text-red-300">The attacker is in an offside position</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <CheckCircle size={32} className="text-green-400" />
-                <div>
-                  <h3 className="text-2xl font-bold text-green-200">ONSIDE</h3>
-                  <p className="text-sm text-green-300">The attacker is not offside</p>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-slate-600 text-sm">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-slate-400">Defender Position (World X):</p>
-                <p className="font-mono text-blue-300">{result.defenderWorld.x.toFixed(4)}</p>
-              </div>
-              <div>
-                <p className="text-slate-400">Attacker Position (World X):</p>
-                <p className="font-mono text-red-300">{result.attackerWorld.x.toFixed(4)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div
         ref={containerRef}
         className="relative bg-slate-900 rounded-lg shadow-2xl overflow-hidden mb-6"
@@ -233,6 +228,10 @@ function ResultVisualization({
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-red-500 rounded"></div>
             <span>Attacker Line</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+            <span>Same Line</span>
           </div>
         </div>
       </div>

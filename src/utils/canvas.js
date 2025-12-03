@@ -3,7 +3,7 @@
  */
 
 /**
- * Calculate optimal canvas scale to fit 75% of viewport
+ * Calculate optimal canvas scale to fit viewport
  * @param {number} imgWidth - Original image width
  * @param {number} imgHeight - Original image height
  * @returns {number} - Scale factor
@@ -11,9 +11,9 @@
 export function calculateCanvasScale(imgWidth, imgHeight) {
   if (!imgWidth || !imgHeight) return 1;
 
-  // Use 75% of viewport dimensions
-  const maxWidth = window.innerWidth * 0.75;
-  const maxHeight = window.innerHeight * 0.75;
+  // Use larger container: 95% of viewport width and 70% of viewport height
+  const maxWidth = window.innerWidth * 0.95;
+  const maxHeight = window.innerHeight * 0.7;
 
   const scaleX = maxWidth / imgWidth;
   const scaleY = maxHeight / imgHeight;
@@ -29,7 +29,7 @@ export function calculateCanvasScale(imgWidth, imgHeight) {
  * @param {{x: number, y: number}} point - Point in screen coordinates
  * @param {Array<{x: number, y: number}>} calibrationPoints - Pitch calibration points [TL, TR, BR, BL]
  * @param {number} scale - Canvas scale factor
- * @param {string} color - Line color
+ * @param {string} color - Line color (not used, always dark gray)
  */
 export function drawPerspectiveAxes(ctx, point, calibrationPoints, scale, color) {
   const x = point.x;
@@ -39,8 +39,8 @@ export function drawPerspectiveAxes(ctx, point, calibrationPoints, scale, color)
   const [tl, tr, br, bl] = calibrationPoints;
 
   ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#111111'; // Very dark gray
+  ctx.lineWidth = 1;
 
   // Find the parametric position (u, v) of the point within the quadrilateral
   // This gives us the "world space" position on the pitch (0-1 range)
@@ -59,7 +59,7 @@ export function drawPerspectiveAxes(ctx, point, calibrationPoints, scale, color)
     ctx.lineTo(rightPoint.x * scale, rightPoint.y * scale);
     ctx.stroke();
 
-    // 2. Z-AXIS (Depth - parallel to pitch depth at constant width u)
+    // 2. Y-AXIS (Depth - following pitch perspective, full depth)
     // Draw line from top edge to bottom edge at the same width (u)
     const topPoint = bilinearInterpolate(tl, tr, br, bl, u, 0);
     const bottomPoint = bilinearInterpolate(tl, tr, br, bl, u, 1);
@@ -69,27 +69,14 @@ export function drawPerspectiveAxes(ctx, point, calibrationPoints, scale, color)
     ctx.lineTo(bottomPoint.x * scale, bottomPoint.y * scale);
     ctx.stroke();
 
-    // 3. Y-AXIS (Height - vertical line in image space)
-    // This represents height above the pitch, so it's perpendicular to the image
-    const yAxisLength = 100;
+    // 3. Z-AXIS (Height - vertical line in image space, only upward)
+    // This is a straight vertical line, not following pitch perspective
+    const zAxisLength = 50; // Extend upward only
     ctx.beginPath();
-    ctx.moveTo(x * scale, (y - yAxisLength / scale) * scale);
-    ctx.lineTo(x * scale, (y + yAxisLength / scale) * scale);
+    ctx.moveTo(x * scale, y * scale);
+    ctx.lineTo(x * scale, y * scale - zAxisLength);
     ctx.stroke();
   }
-
-  // Draw center point
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x * scale, y * scale, 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Draw outer circle
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(x * scale, y * scale, 15, 0, Math.PI * 2);
-  ctx.stroke();
 
   ctx.restore();
 }
