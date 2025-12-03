@@ -4,7 +4,18 @@ All notable changes to the VAR Simulation Tool project.
 
 ## [Unreleased]
 
-### Added - 2024-12-03
+### Added - 2024-12-03 (Latest)
+
+#### Pitch Calibration Enhancements
+- **Magnifying Glass Loupe**: 3x zoom magnifier appears when hovering over calibration canvas
+- **Crosshair Cursor**: Visual crosshair for precise corner placement
+- **Magnifier Features**:
+  - Shows calibration handles when they're in the magnified view
+  - Gold/yellow themed to match calibration colors
+  - Displays current corner being dragged with coordinates
+  - Real-time feedback during corner adjustment
+
+### Added - 2024-12-03 (Earlier)
 
 #### Canvas Sizing Improvements
 - **75% Viewport Sizing**: Canvas now automatically scales to fit 75% of the viewport width or height (whichever is smaller)
@@ -23,10 +34,18 @@ All notable changes to the VAR Simulation Tool project.
 - `drawPerspectiveAxes()`: Renders 3-axis lines that adapt to pitch perspective
 - `interpolateEdge()`: Helper function for calculating perspective line intersections
 
+### Fixed - 2024-12-03
+
+#### Perspective Calculation Improvements
+- **Bilinear Interpolation**: Implemented proper bilinear interpolation for perspective axes
+- **Newton-Raphson Method**: Added iterative solver to find parametric position within quadrilateral
+- **Accurate Axis Lines**: X and Z axes now correctly follow pitch geometry based on calibration
+- **Proper World Mapping**: Axes adapt to pitch perspective at any angle
+
 ### Changed
 
 #### Component Updates
-- **PitchCalibration**: Updated to use 75% viewport sizing
+- **PitchCalibration**: Updated to use 75% viewport sizing, added magnifier loupe and crosshair
 - **AttackDirection**: Updated to use 75% viewport sizing
 - **PlayerPositioning**: Now displays 3-axis perspective markers instead of crosshair
 - **ResultVisualization**: Shows perspective axes on final analysis for clarity
