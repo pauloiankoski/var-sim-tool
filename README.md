@@ -52,13 +52,35 @@ The tool uses planar homography to map a distorted quadrilateral (screen space) 
 
 ### Workflow
 
-1. Upload match footage
-2. Calibrate the pitch by placing 4 corner points
-3. Set the attack direction
-4. Mark the defender position
-5. Mark the attacker position
-6. View the offside analysis with projected lines
-7. Export the final image
+1. **Upload Match Footage**: Drag and drop or click to select an image of the match
+2. **Calibrate the Pitch**: Drag the 4 corner handles (TL, TR, BR, BL) to match the pitch boundaries
+3. **Set Attack Direction**: Choose whether the attacking team is playing left or right
+4. **Mark Defender Position**: Click to place the defender's position (blue marker)
+5. **Mark Attacker Position**: Click to place the attacker's position (red marker)
+6. **View Analysis**: See the offside decision with projected lines and world coordinates
+7. **Export**: Download the final analysis image
+
+### Features in Detail
+
+#### Cascading State Resets
+Changing upstream configuration (e.g., calibration points) automatically invalidates downstream data (e.g., player positions), ensuring data consistency.
+
+#### Precision Controls
+- **Mouse**: Click and drag for quick placement
+- **Keyboard**: Use arrow keys (↑ ↓ ← →) for pixel-perfect adjustments after placing a marker
+
+#### Visual Aids
+- **Magnifying Glass**: A 3x zoom loupe appears when hovering over the canvas during player positioning
+- **Color-Coded Lines**: Blue for defender, red for attacker
+- **Real-time Feedback**: See the offside decision immediately with world coordinates
+
+### Mathematical Background
+
+The homography transformation is calculated using a system of linear equations derived from the 4 calibration points. The 3×3 homography matrix H maps screen coordinates to normalized world coordinates (0,0 to 1,1).
+
+**Offside Logic**:
+- If attacking **right**: Offside when `attackerX > defenderX`
+- If attacking **left**: Offside when `attackerX < defenderX`
 
 ## License
 
