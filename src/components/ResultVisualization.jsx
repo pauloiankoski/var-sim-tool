@@ -6,6 +6,7 @@ import {
   worldToScreen,
   isOffside
 } from '../utils/math';
+import { calculateCanvasScale, drawPerspectiveAxes } from '../utils/canvas';
 
 function ResultVisualization({
   imageSrc,
@@ -21,18 +22,11 @@ function ResultVisualization({
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  // Calculate scale
+  // Calculate scale to fit 75% of viewport
   useEffect(() => {
-    if (!containerRef.current || !imgDims.w || !imgDims.h) return;
+    if (!imgDims.w || !imgDims.h) return;
 
-    const container = containerRef.current;
-    const containerWidth = container.clientWidth;
-    const containerHeight = Math.min(600, window.innerHeight * 0.6);
-
-    const scaleX = containerWidth / imgDims.w;
-    const scaleY = containerHeight / imgDims.h;
-    const newScale = Math.min(scaleX, scaleY, 1);
-
+    const newScale = calculateCanvasScale(imgDims.w, imgDims.h);
     setScale(newScale);
   }, [imgDims]);
 
@@ -115,34 +109,19 @@ function ResultVisualization({
       ctx.lineTo(attackerBottom.x * scale, attackerBottom.y * scale);
       ctx.stroke();
 
-      // Draw position markers
-      // Defender
-      const defX = defenderPos.x * scale;
-      const defY = defenderPos.y * scale;
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(defX, defY, 15, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = '#3b82f6';
-      ctx.beginPath();
-      ctx.arc(defX, defY, 5, 0, Math.PI * 2);
-      ctx.fill();
+      // Draw position markers with perspective axes
+      // Defender (Blue)
+      drawPerspectiveAxes(ctx, defenderPos, calibrationPoints, scale, '#3b82f6');
 
-      // Attacker
-      const attX = attackerPos.x * scale;
-      const attY = attackerPos.y * scale;
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(attX, attY, 15, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.arc(attX, attY, 5, 0, Math.PI * 2);
-      ctx.fill();
+      // Attacker (Red)
+      drawPerspectiveAxes(ctx, attackerPos, calibrationPoints, scale, '#ef4444');
 
       // Add labels
+      const defX = defenderPos.x * scale;
+      const defY = defenderPos.y * scale;
+      const attX = attackerPos.x * scale;
+      const attY = attackerPos.y * scale;
+
       ctx.font = 'bold 14px sans-serif';
       ctx.fillStyle = '#ffffff';
       ctx.strokeStyle = '#000000';
