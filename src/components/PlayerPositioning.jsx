@@ -171,34 +171,44 @@ function PlayerPositioning({ imageSrc, imgDims, calibrationPoints, position, onP
                 height={120}
                 ref={(canvas) => {
                   if (!canvas) return;
+                  const mainCanvas = canvasRef.current;
+                  if (!mainCanvas) return;
+                  
                   const ctx = canvas.getContext('2d');
                   
-                  // Draw magnified portion
+                  // Draw magnified portion from the main canvas (which has lines already drawn)
                   const zoomLevel = 3;
                   const sourceSize = 40;
                   const sourceX = Math.max(0, Math.min(imgDims.w - sourceSize, canvasMousePos.x - sourceSize / 2));
                   const sourceY = Math.max(0, Math.min(imgDims.h - sourceSize, canvasMousePos.y - sourceSize / 2));
                   
+                  // Draw from the main canvas (scaled coordinates)
+                  const scaledSourceX = sourceX * scale;
+                  const scaledSourceY = sourceY * scale;
+                  const scaledSourceSize = sourceSize * scale;
+                  
                   ctx.drawImage(
-                    imageSrc,
-                    sourceX, sourceY, sourceSize, sourceSize,
+                    mainCanvas,
+                    scaledSourceX, scaledSourceY, scaledSourceSize, scaledSourceSize,
                     0, 0, 120, 120
                   );
                   
-                  // Draw simple crosshair in center of magnifier
+                  // Draw crosshair at center (current mouse position)
                   ctx.strokeStyle = color;
-                  ctx.lineWidth = 2;
+                  ctx.lineWidth = 1;
+                  ctx.setLineDash([3, 3]);
                   ctx.beginPath();
                   ctx.moveTo(60, 50);
                   ctx.lineTo(60, 70);
                   ctx.moveTo(50, 60);
                   ctx.lineTo(70, 60);
                   ctx.stroke();
+                  ctx.setLineDash([]);
                   
                   // Draw center dot
                   ctx.fillStyle = color;
                   ctx.beginPath();
-                  ctx.arc(60, 60, 3, 0, Math.PI * 2);
+                  ctx.arc(60, 60, 2, 0, Math.PI * 2);
                   ctx.fill();
                 }}
               />
@@ -210,11 +220,6 @@ function PlayerPositioning({ imageSrc, imgDims, calibrationPoints, position, onP
         )}
       </div>
 
-      {position && (
-        <div className="mt-4 text-sm text-slate-400">
-          Position: ({Math.round(position.x)}, {Math.round(position.y)})
-        </div>
-      )}
     </div>
   );
 }
