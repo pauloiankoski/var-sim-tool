@@ -48,6 +48,28 @@ npm run dev
 npm run build
 ```
 
+### Deployment
+
+This project is configured for automatic deployment to GitHub Pages using GitHub Actions.
+
+**Setup Steps:**
+
+1. Push your code to GitHub
+2. Go to repository Settings → Pages
+3. Under "Source", select "GitHub Actions"
+4. The site will automatically deploy on every push to `main` branch
+
+**Manual Deployment:**
+
+You can also trigger deployment manually from the Actions tab in your GitHub repository.
+
+**Live Site:**
+
+Once deployed, your site will be available at:
+```
+https://yourusername.github.io/var-sim-tool/
+```
+
 ## How It Works
 
 The tool uses planar homography to map a distorted quadrilateral (screen space) to a perfect square unit (world space 0,0 to 1,1). This allows accurate projection of 2D screen coordinates into 3D world space without a full 3D engine.
