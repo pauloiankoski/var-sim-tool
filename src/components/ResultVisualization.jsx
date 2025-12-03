@@ -43,8 +43,12 @@ function ResultVisualization({
       const defenderWorld = screenToWorld(H, defenderPos);
       const attackerWorld = screenToWorld(H, attackerPos);
 
-      // Check if lines are on the same position (tolerance of 0.01 in world space)
-      const sameLine = Math.abs(attackerWorld.x - defenderWorld.x) < 0.01;
+      // Check if lines are within 2 pixels of each other in screen space
+      // Convert both world positions back to screen space and compare
+      const defenderScreenX = worldToScreen(H, { x: defenderWorld.x, y: 0.5 }).x;
+      const attackerScreenX = worldToScreen(H, { x: attackerWorld.x, y: 0.5 }).x;
+      const pixelDifference = Math.abs(defenderScreenX - attackerScreenX);
+      const sameLine = pixelDifference < 2; // Within 2 pixels
       
       // Check offside
       const offsideResult = sameLine ? false : isOffside(attackerWorld.x, defenderWorld.x, attackDirection);
@@ -91,9 +95,10 @@ function ResultVisualization({
 
       // Draw offside lines
       if (sameLine) {
-        // Draw single yellow line when positions are the same
-        const lineTop = worldToScreen(H, { x: defenderWorld.x, y: 0 });
-        const lineBottom = worldToScreen(H, { x: defenderWorld.x, y: 1 });
+        // Draw single yellow line at average position when lines are the same
+        const avgX = (defenderWorld.x + attackerWorld.x) / 2;
+        const lineTop = worldToScreen(H, { x: avgX, y: 0 });
+        const lineBottom = worldToScreen(H, { x: avgX, y: 1 });
         
         ctx.strokeStyle = '#fbbf24'; // Yellow/Gold
         ctx.lineWidth = 3;
