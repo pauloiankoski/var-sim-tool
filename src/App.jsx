@@ -90,10 +90,10 @@ function App() {
             <span>Previous</span>
           </button>
 
-          {state.step === Step.UPLOAD && (
+          {(state.step !== Step.UPLOAD || state.image) && (
             <button
               onClick={() => dispatch({ type: ActionTypes.RESET })}
-              className="px-6 py-3 rounded-lg font-semibold bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+              className="px-6 py-3 rounded-lg font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors"
             >
               Reset
             </button>
