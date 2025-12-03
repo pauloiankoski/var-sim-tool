@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { calculateCanvasScale } from '../utils/canvas';
 
 function AttackDirection({ imageSrc, imgDims, calibrationPoints, attackDirection, onDirectionChange }) {
   const canvasRef = useRef(null);
@@ -9,13 +10,7 @@ function AttackDirection({ imageSrc, imgDims, calibrationPoints, attackDirection
     const canvas = canvasRef.current;
     if (!canvas || !imageSrc) return;
 
-    const container = containerRef.current;
-    const containerWidth = container.clientWidth;
-    const containerHeight = Math.min(600, window.innerHeight * 0.6);
-
-    const scaleX = containerWidth / imgDims.w;
-    const scaleY = containerHeight / imgDims.h;
-    const scale = Math.min(scaleX, scaleY, 1);
+    const scale = calculateCanvasScale(imgDims.w, imgDims.h);
 
     const displayWidth = imgDims.w * scale;
     const displayHeight = imgDims.h * scale;

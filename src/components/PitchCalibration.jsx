@@ -1,29 +1,18 @@
 import { useRef, useEffect, useState } from 'react';
+import { calculateCanvasScale } from '../utils/canvas';
 
 function PitchCalibration({ imageSrc, imgDims, calibrationPoints, onUpdatePoint }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [draggedIndex, setDraggedIndex] = useState(null);
 
-  // Calculate canvas dimensions to fit container while maintaining aspect ratio
+  // Calculate canvas dimensions to fit 75% of viewport
   useEffect(() => {
-    if (!containerRef.current || !imgDims.w || !imgDims.h) return;
+    if (!imgDims.w || !imgDims.h) return;
 
-    const container = containerRef.current;
-    const containerWidth = container.clientWidth;
-    const containerHeight = Math.min(600, window.innerHeight * 0.6);
-
-    const scaleX = containerWidth / imgDims.w;
-    const scaleY = containerHeight / imgDims.h;
-    const newScale = Math.min(scaleX, scaleY, 1); // Don't scale up
-
+    const newScale = calculateCanvasScale(imgDims.w, imgDims.h);
     setScale(newScale);
-    setOffset({
-      x: (containerWidth - imgDims.w * newScale) / 2,
-      y: (containerHeight - imgDims.h * newScale) / 2
-    });
   }, [imgDims]);
 
   // Draw canvas

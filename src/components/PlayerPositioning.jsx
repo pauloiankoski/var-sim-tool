@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { calculateCanvasScale, drawPerspectiveAxes } from '../utils/canvas';
 
 function PlayerPositioning({ imageSrc, imgDims, calibrationPoints, position, onPositionChange, label, color }) {
   const canvasRef = useRef(null);
@@ -8,18 +9,11 @@ function PlayerPositioning({ imageSrc, imgDims, calibrationPoints, position, onP
   const [magnifierPos, setMagnifierPos] = useState({ x: 0, y: 0 });
   const [canvasMousePos, setCanvasMousePos] = useState({ x: 0, y: 0 });
 
-  // Calculate scale
+  // Calculate scale to fit 75% of viewport
   useEffect(() => {
-    if (!containerRef.current || !imgDims.w || !imgDims.h) return;
+    if (!imgDims.w || !imgDims.h) return;
 
-    const container = containerRef.current;
-    const containerWidth = container.clientWidth;
-    const containerHeight = Math.min(600, window.innerHeight * 0.6);
-
-    const scaleX = containerWidth / imgDims.w;
-    const scaleY = containerHeight / imgDims.h;
-    const newScale = Math.min(scaleX, scaleY, 1);
-
+    const newScale = calculateCanvasScale(imgDims.w, imgDims.h);
     setScale(newScale);
   }, [imgDims]);
 
@@ -59,33 +53,9 @@ function PlayerPositioning({ imageSrc, imgDims, calibrationPoints, position, onP
     ctx.setLineDash([]);
     ctx.restore();
 
-    // Draw position marker if set
+    // Draw position marker with perspective axes if set
     if (position) {
-      const x = position.x * scale;
-      const y = position.y * scale;
-
-      // Crosshair
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x - 20, y);
-      ctx.lineTo(x + 20, y);
-      ctx.moveTo(x, y - 20);
-      ctx.lineTo(x, y + 20);
-      ctx.stroke();
-
-      // Center dot
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Outer circle
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, y, 15, 0, Math.PI * 2);
-      ctx.stroke();
+      drawPerspectiveAxes(ctx, position, calibrationPoints, scale, color);
     }
   }, [imageSrc, imgDims, calibrationPoints, position, scale, color]);
 
@@ -215,7 +185,7 @@ function PlayerPositioning({ imageSrc, imgDims, calibrationPoints, position, onP
                     0, 0, 120, 120
                   );
                   
-                  // Draw crosshair in center
+                  // Draw simple crosshair in center of magnifier
                   ctx.strokeStyle = color;
                   ctx.lineWidth = 2;
                   ctx.beginPath();
