@@ -6,6 +6,9 @@ function PitchCalibration({ imageSrc, imgDims, calibrationPoints, onUpdatePoint 
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [showMagnifier, setShowMagnifier] = useState(false);
+  const [magnifierPos, setMagnifierPos] = useState({ x: 0, y: 0 });
+  const [canvasMousePos, setCanvasMousePos] = useState({ x: 0, y: 0 });
 
   // Calculate canvas dimensions to fit 75% of viewport
   useEffect(() => {
@@ -110,16 +113,30 @@ function PitchCalibration({ imageSrc, imgDims, calibrationPoints, onUpdatePoint 
   };
 
   const handleMouseMove = (e) => {
-    if (draggedIndex === null) return;
-
     const coords = getCanvasCoordinates(e);
     if (!coords) return;
 
-    // Clamp coordinates to image bounds
-    const clampedX = Math.max(0, Math.min(imgDims.w, coords.x));
-    const clampedY = Math.max(0, Math.min(imgDims.h, coords.y));
+    // Update magnifier position
+    setCanvasMousePos(coords);
+    setMagnifierPos({ x: e.clientX, y: e.clientY });
 
-    onUpdatePoint(draggedIndex, { x: clampedX, y: clampedY });
+    // Update dragged point if dragging
+    if (draggedIndex !== null) {
+      // Clamp coordinates to image bounds
+      const clampedX = Math.max(0, Math.min(imgDims.w, coords.x));
+      const clampedY = Math.max(0, Math.min(imgDims.h, coords.y));
+
+      onUpdatePoint(draggedIndex, { x: clampedX, y: clampedY });
+    }
+  };
+
+  const handleMouseEnter = () => {
+    setShowMagnifier(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowMagnifier(false);
+    setDraggedIndex(null);
   };
 
   const handleMouseUp = () => {
@@ -144,13 +161,104 @@ function PitchCalibration({ imageSrc, imgDims, calibrationPoints, onUpdatePoint 
       >
         <canvas
           ref={canvasRef}
-          className="cursor-move"
+          className="cursor-crosshair"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         />
+
+        {/* Magnifier Loupe */}
+        {showMagnifier && imageSrc && (
+          <div
+            className="fixed pointer-events-none z-50"
+            style={{
+              left: magnifierPos.x + 20,
+              top: magnifierPos.y + 20,
+            }}
+          >
+            <div className="bg-slate-800 border-4 border-yellow-500 rounded-lg shadow-2xl overflow-hidden">
+              <canvas
+                width={120}
+                height={120}
+                ref={(canvas) => {
+                  if (!canvas) return;
+                  const ctx = canvas.getContext('2d');
+                  
+                  // Draw magnified portion
+                  const zoomLevel = 3;
+                  const sourceSize = 40;
+                  const sourceX = Math.max(0, Math.min(imgDims.w - sourceSize, canvasMousePos.x - sourceSize / 2));
+                  const sourceY = Math.max(0, Math.min(imgDims.h - sourceSize, canvasMousePos.y - sourceSize / 2));
+                  
+                  ctx.drawImage(
+                    imageSrc,
+                    sourceX, sourceY, sourceSize, sourceSize,
+                    0, 0, 120, 120
+                  );
+                  
+                  // Draw crosshair in center
+                  ctx.strokeStyle = '#fbbf24';
+                  ctx.lineWidth = 2;
+                  ctx.beginPath();
+                  ctx.moveTo(60, 50);
+                  ctx.lineTo(60, 70);
+                  ctx.moveTo(50, 60);
+                  ctx.lineTo(70, 60);
+                  ctx.stroke();
+                  
+                  // Draw center dot
+                  ctx.fillStyle = '#fbbf24';
+                  ctx.beginPath();
+                  ctx.arc(60, 60, 3, 0, Math.PI * 2);
+                  ctx.fill();
+
+                  // Draw calibration points if they're in view
+                  calibrationPoints.forEach((point, i) => {
+                    const relX = point.x - sourceX;
+                    const relY = point.y - sourceY;
+                    
+                    if (relX >= 0 && relX <= sourceSize && relY >= 0 && relY <= sourceSize) {
+                      const magX = (relX / sourceSize) * 120;
+                      const magY = (relY / sourceSize) * 120;
+                      
+                      // Draw handle
+                      ctx.fillStyle = '#ffffff';
+                      ctx.beginPath();
+                      ctx.arc(magX, magY, 8, 0, Math.PI * 2);
+                      ctx.fill();
+                      
+                      ctx.fillStyle = '#fbbf24';
+                      ctx.beginPath();
+                      ctx.arc(magX, magY, 5, 0, Math.PI * 2);
+                      ctx.fill();
+                      
+                      // Label
+                      ctx.fillStyle = '#000000';
+                      ctx.font = 'bold 8px sans-serif';
+                      ctx.textAlign = 'center';
+                      ctx.textBaseline = 'middle';
+                      const labels = ['TL', 'TR', 'BR', 'BL'];
+                      ctx.fillText(labels[i], magX, magY);
+                    }
+                  });
+                }}
+              />
+              <div className="bg-slate-700 px-2 py-1 text-xs text-center text-slate-300">
+                3x Zoom
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {draggedIndex !== null && (
+        <div className="mt-4 text-sm text-slate-400">
+          Dragging: {['Top-Left', 'Top-Right', 'Bottom-Right', 'Bottom-Left'][draggedIndex]} 
+          {' '}({Math.round(calibrationPoints[draggedIndex].x)}, {Math.round(calibrationPoints[draggedIndex].y)})
+        </div>
+      )}
     </div>
   );
 }
